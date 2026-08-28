@@ -2,6 +2,7 @@ import base64
 import calendar
 import hashlib
 import hmac
+import html
 import os
 import secrets
 import uuid
@@ -798,7 +799,7 @@ def page_dashboard(db, user):
             view["Data"] = view["due_date"].dt.strftime("%d/%m/%Y")
             view["Tipo"] = view["kind"].map({"expense": "Despesa", "income": "Receita"})
             view["Valor"] = view["amount"].map(brl)
-            upcoming_view = view[["Data", "Tipo", "description", "Valor"]].rename(
+            upcoming_view = view[["Valor", "Tipo", "description", "Data"]].rename(
                 columns={"description": "Descrição"}
             )
 
@@ -825,10 +826,10 @@ def page_dashboard(db, user):
                 hide_index=True,
                 width="stretch",
                 column_config={
-                    "Data": st.column_config.TextColumn("Data", width="small"),
+                    "Valor": st.column_config.TextColumn("Valor", width="medium"),
                     "Tipo": st.column_config.TextColumn("Tipo", width="small"),
                     "Descrição": st.column_config.TextColumn("Descrição", width="large"),
-                    "Valor": st.column_config.TextColumn("Valor", width="medium"),
+                    "Data": st.column_config.TextColumn("Data", width="small"),
                 },
             )
 
@@ -1340,14 +1341,69 @@ def main():
         st.stop()
 
     with st.sidebar:
-        st.markdown("## 💰 Meu Financeiro")
-        st.caption(f"{user['name']} · {user['role']}")
+        safe_name = html.escape(str(user.get("name") or "Usuário"))
+        safe_role = html.escape(str(user.get("role") or "user").upper())
+        user_initial = safe_name[:1].upper() if safe_name else "U"
+
+        st.markdown(
+            f"""
+            <div class="sidebar-brand-panel">
+                <div class="sidebar-brand-mark">MF</div>
+                <div>
+                    <div class="sidebar-brand-title">MEU FINANCEIRO</div>
+                    <div class="sidebar-brand-subtitle">CONTROL CENTER</div>
+                </div>
+            </div>
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar">{user_initial}</div>
+                <div class="sidebar-user-copy">
+                    <div class="sidebar-user-name">{safe_name}</div>
+                    <div class="sidebar-user-role"><span></span>{safe_role} · ONLINE</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         pages = ["Dashboard", "Lançar despesa", "Lançar receita", "Movimentações", "Orçamentos", "Minha conta"]
         if user["role"] == "admin":
             pages.append("Usuários")
-        selected_page = st.radio("Navegação", pages, key="nav")
-        st.divider()
-        if st.button("Sair", width="stretch"):
+
+        nav_items = [
+            ("Dashboard", "◫", "Visão geral das finanças", "dashboard"),
+            ("Lançar despesa", "−", "Registrar nova despesa", "expense"),
+            ("Lançar receita", "+", "Registrar nova receita", "income"),
+            ("Movimentações", "⇄", "Consultar e gerenciar lançamentos", "transactions"),
+            ("Orçamentos", "◎", "Definir limites por categoria", "budgets"),
+            ("Minha conta", "○", "Perfil e segurança", "account"),
+            ("Usuários", "◇", "Administração de usuários", "users"),
+        ]
+
+        selected_page = st.session_state.get("nav", "Dashboard")
+        if selected_page not in pages:
+            selected_page = "Dashboard"
+            st.session_state["nav"] = selected_page
+
+        st.markdown('<div class="sidebar-section-label">NAVEGAÇÃO</div>', unsafe_allow_html=True)
+        for page, icon, hint, key_name in nav_items:
+            if page not in pages:
+                continue
+            clicked = st.button(
+                f"{icon}  {page}",
+                key=f"nav_btn_{key_name}",
+                type="primary" if selected_page == page else "secondary",
+                width="stretch",
+                help=hint,
+            )
+            if clicked:
+                st.session_state["nav"] = page
+                selected_page = page
+
+        st.markdown(
+            '<div class="sidebar-session-divider"><span>SESSÃO</span></div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("⏻  Encerrar sessão", key="logout_btn", width="stretch"):
             do_logout()
 
     if selected_page == "Dashboard":
