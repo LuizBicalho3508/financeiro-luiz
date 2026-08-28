@@ -264,6 +264,96 @@ def inject_dashboard_theme():
         }
 
 
+        /* Global module pages */
+        .module-page-hero {
+            --module-accent: #00e7ff;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-height: 112px;
+            margin: 0 0 18px 0;
+            padding: 18px 20px;
+            border: 1px solid color-mix(in srgb, var(--module-accent) 24%, rgba(87,164,220,.14));
+            border-radius: 18px;
+            background: radial-gradient(420px 145px at 0% 0%, color-mix(in srgb, var(--module-accent) 10%, transparent), transparent 72%), linear-gradient(135deg, rgba(15,30,50,.96), rgba(8,17,31,.98));
+            box-shadow: 0 16px 42px rgba(1,7,18,.22), inset 0 1px 0 rgba(255,255,255,.03);
+        }
+        .module-page-hero::after {
+            content: "";
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            bottom: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--module-accent), transparent 75%);
+            filter: drop-shadow(0 0 6px var(--module-accent));
+            opacity: .78;
+        }
+        .module-page-blue { --module-accent: #00e7ff; }
+        .module-page-green { --module-accent: #16e07a; }
+        .module-page-red { --module-accent: #ff4d67; }
+        .module-page-amber { --module-accent: #ffb020; }
+        .module-page-icon {
+            display: grid;
+            place-items: center;
+            width: 54px;
+            height: 54px;
+            flex: 0 0 54px;
+            border-radius: 15px;
+            border: 1px solid color-mix(in srgb, var(--module-accent) 34%, transparent);
+            background: color-mix(in srgb, var(--module-accent) 9%, rgba(7,16,29,.75));
+            color: var(--module-accent);
+            font-size: 1.45rem;
+            font-weight: 900;
+            box-shadow: inset 0 0 20px color-mix(in srgb, var(--module-accent) 8%, transparent), 0 0 20px color-mix(in srgb, var(--module-accent) 6%, transparent);
+        }
+        .module-page-copy { min-width: 0; flex: 1; }
+        .module-page-kicker { margin-bottom: 3px; color: var(--module-accent); font-size: .58rem; font-weight: 850; letter-spacing: .19em; text-transform: uppercase; }
+        .module-page-title { color: #f6f9fd; font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 850; letter-spacing: -.035em; line-height: 1.1; }
+        .module-page-subtitle { max-width: 800px; margin-top: 5px; color: #8297ad; font-size: .78rem; line-height: 1.45; }
+        .module-page-status { display: flex; align-items: center; gap: 6px; padding: 7px 9px; border: 1px solid rgba(22,224,122,.22); border-radius: 8px; color: #6ee7a4; background: rgba(22,224,122,.035); font-size: .54rem; font-weight: 850; letter-spacing: .09em; }
+        .module-page-status span { width: 6px; height: 6px; border-radius: 50%; background: #16e07a; box-shadow: 0 0 8px rgba(22,224,122,.72); }
+
+        [data-testid="stForm"] {
+            padding: 18px 18px 8px 18px;
+            border: 1px solid rgba(87,164,220,.14);
+            border-radius: 17px;
+            background: linear-gradient(145deg, rgba(13,25,42,.82), rgba(8,18,32,.72));
+            box-shadow: 0 13px 34px rgba(1,7,18,.14), inset 0 1px 0 rgba(255,255,255,.025);
+        }
+        [data-testid="stTextInput"] input,
+        [data-testid="stNumberInput"] input,
+        [data-testid="stTextArea"] textarea,
+        [data-testid="stDateInput"] input {
+            border-color: rgba(87,164,220,.17) !important;
+            border-radius: 10px !important;
+            background: rgba(7,16,29,.64) !important;
+        }
+        [data-testid="stTextInput"] input:focus,
+        [data-testid="stNumberInput"] input:focus,
+        [data-testid="stTextArea"] textarea:focus,
+        [data-testid="stDateInput"] input:focus {
+            border-color: rgba(0,231,255,.42) !important;
+            box-shadow: 0 0 0 1px rgba(0,231,255,.08), 0 0 16px rgba(0,231,255,.04) !important;
+        }
+        [data-testid="stExpander"] { border: 1px solid rgba(87,164,220,.14) !important; border-radius: 14px !important; background: rgba(11,22,38,.58) !important; overflow: hidden; }
+        [data-testid="stAlert"] { border-radius: 13px; border-width: 1px; }
+
+        .profile-summary-card { display: flex; align-items: center; gap: 14px; margin: 0 0 18px 0; padding: 16px 18px; border: 1px solid rgba(87,164,220,.15); border-radius: 16px; background: linear-gradient(145deg, rgba(15,30,50,.90), rgba(8,18,32,.82)); box-shadow: 0 12px 32px rgba(1,7,18,.16); }
+        .profile-summary-avatar { display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 46px; border-radius: 50%; color: #06111f; background: linear-gradient(135deg, #00e7ff, #6ee7ff); font-size: 1rem; font-weight: 900; box-shadow: 0 0 22px rgba(0,231,255,.14); }
+        .profile-summary-main { min-width: 0; flex: 1; }
+        .profile-summary-name { color: #f4f8fc; font-size: .92rem; font-weight: 800; }
+        .profile-summary-email { color: #8297ad; font-size: .72rem; margin-top: 2px; }
+        .profile-summary-role { padding: 6px 9px; border: 1px solid rgba(0,231,255,.18); border-radius: 8px; color: #9defff; background: rgba(0,231,255,.04); font-size: .58rem; font-weight: 850; letter-spacing: .08em; }
+
+        @media (max-width: 720px) {
+            .module-page-hero { align-items: flex-start; }
+            .module-page-status { display: none; }
+            .module-page-icon { width: 45px; height: 45px; flex-basis: 45px; }
+        }
+
         /* Sidebar / Control Center navigation */
         [data-testid="stSidebar"] > div:first-child {
             padding-top: .65rem;
@@ -446,6 +536,25 @@ def inject_dashboard_theme():
             .kpi-card { min-height: 132px !important; }
         }
         </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_page_header(title, subtitle, kicker="MÓDULO", icon="◫", tone="blue"):
+    allowed = {"blue", "green", "red", "amber"}
+    tone = tone if tone in allowed else "blue"
+    st.markdown(
+        f"""
+        <div class="module-page-hero module-page-{tone}">
+            <div class="module-page-icon">{icon}</div>
+            <div class="module-page-copy">
+                <div class="module-page-kicker">{kicker}</div>
+                <div class="module-page-title">{title}</div>
+                <div class="module-page-subtitle">{subtitle}</div>
+            </div>
+            <div class="module-page-status"><span></span> OPERACIONAL</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )

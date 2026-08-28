@@ -18,7 +18,7 @@ from dateutil.relativedelta import relativedelta
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 from charts import render_balance_chart, render_expense_donut, render_flow_chart
-from dashboard_ui import inject_dashboard_theme, render_dashboard_hero, section_title
+from dashboard_ui import inject_dashboard_theme, render_dashboard_hero, render_page_header, section_title
 
 
 APP_NAME = "Meu Financeiro"
@@ -666,7 +666,6 @@ def insert_income_recurrences(
 # Páginas
 # -----------------------------------------------------------------------------
 def page_dashboard(db, user):
-    inject_dashboard_theme()
     rows = transaction_rows(db, user)
     df = to_dataframe(rows)
 
@@ -855,8 +854,14 @@ def page_dashboard(db, user):
 
 
 def page_add_expense(db, user):
-    st.title("Lançar despesa")
-    st.caption("Informe uma compra e o sistema cria automaticamente todas as parcelas.")
+    render_page_header(
+        "Lançar despesa",
+        "Registre compras, contas e parcelamentos. O sistema distribui automaticamente os vencimentos futuros.",
+        "SAÍDAS",
+        "−",
+        "red",
+    )
+    section_title("Dados da despesa", "LANÇAMENTO INTELIGENTE")
 
     with st.form("expense_form", clear_on_submit=True):
         c1, c2 = st.columns([2, 1])
@@ -921,8 +926,14 @@ def page_add_expense(db, user):
 
 
 def page_add_income(db, user):
-    st.title("Lançar receita")
-    st.caption("Cadastre uma receita única ou repita automaticamente por vários meses.")
+    render_page_header(
+        "Lançar receita",
+        "Cadastre entradas únicas ou recorrentes e mantenha sua previsão de caixa atualizada automaticamente.",
+        "ENTRADAS",
+        "+",
+        "green",
+    )
+    section_title("Dados da receita", "RECEBIMENTOS")
 
     with st.form("income_form", clear_on_submit=True):
         c1, c2 = st.columns([2, 1])
@@ -970,7 +981,14 @@ def page_add_income(db, user):
 
 
 def page_transactions(db, user):
-    st.title("Movimentações")
+    render_page_header(
+        "Movimentações",
+        "Consulte, filtre, exporte e gerencie todo o histórico financeiro em um único painel operacional.",
+        "HISTÓRICO",
+        "⇄",
+        "blue",
+    )
+    section_title("Filtros e período", "CONSULTA")
 
     c1, c2 = st.columns(2)
     start = c1.date_input("De", value=date.today() - timedelta(days=180), key="mov_start")
@@ -1029,8 +1047,7 @@ def page_transactions(db, user):
         mime="text/csv",
     )
 
-    st.divider()
-    st.subheader("Gerenciar lançamento")
+    section_title("Gerenciar lançamento", "BAIXA · EDIÇÃO · EXCLUSÃO")
     if filtered.empty:
         st.info("Nenhum lançamento corresponde aos filtros.")
         return
@@ -1082,7 +1099,7 @@ def page_transactions(db, user):
         st.success(f"{result.deleted_count} lançamento(s) excluído(s).")
         st.rerun()
 
-    with st.expander("Editar este lançamento"):
+    with st.expander("Editar este lançamento", expanded=False):
         with st.form(f"edit_{selected_id}"):
             e1, e2 = st.columns([2, 1])
             edit_description = e1.text_input("Descrição", value=selected.get("description", ""))
@@ -1125,8 +1142,14 @@ def page_transactions(db, user):
 
 
 def page_budgets(db, user):
-    st.title("Orçamentos")
-    st.caption("Defina limites mensais por categoria e acompanhe o consumo no dashboard.")
+    render_page_header(
+        "Orçamentos",
+        "Defina limites mensais por categoria e acompanhe quanto do orçamento já foi comprometido.",
+        "PLANEJAMENTO",
+        "◎",
+        "amber",
+    )
+    section_title("Configurar orçamento", "LIMITES MENSAIS")
 
     today = date.today()
     c1, c2 = st.columns(2)
@@ -1184,12 +1207,29 @@ def page_budgets(db, user):
 
 
 def page_my_account(db, user):
-    st.title("Minha conta")
-    st.write(f"**Nome:** {user['name']}")
-    st.write(f"**E-mail:** {user['email']}")
-    st.write(f"**Perfil:** {user['role']}")
+    render_page_header(
+        "Minha conta",
+        "Gerencie seus dados de acesso e mantenha as credenciais da sua conta protegidas.",
+        "PERFIL & SEGURANÇA",
+        "○",
+        "blue",
+    )
+    safe_profile_name = html.escape(str(user.get("name") or "Usuário"))
+    safe_profile_email = html.escape(str(user.get("email") or ""))
+    safe_profile_role = html.escape(str(user.get("role") or "user").upper())
+    st.markdown(
+        f"""<div class="profile-summary-card">
+            <div class="profile-summary-avatar">{safe_profile_name[:1].upper()}</div>
+            <div class="profile-summary-main">
+                <div class="profile-summary-name">{safe_profile_name}</div>
+                <div class="profile-summary-email">{safe_profile_email}</div>
+            </div>
+            <div class="profile-summary-role">{safe_profile_role}</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
-    st.subheader("Alterar senha")
+    section_title("Alterar senha", "SEGURANÇA DA CONTA")
     with st.form("self_password_change"):
         current_password = st.text_input("Senha atual", type="password")
         new_password = st.text_input("Nova senha", type="password")
@@ -1216,7 +1256,14 @@ def page_my_account(db, user):
 
 
 def page_admin_users(db, user):
-    st.title("Administração de usuários")
+    render_page_header(
+        "Administração de usuários",
+        "Crie acessos, controle perfis e gerencie credenciais dos usuários autorizados no sistema.",
+        "ADMINISTRAÇÃO",
+        "◇",
+        "blue",
+    )
+    section_title("Usuários do sistema", "ACESSOS & PERMISSÕES")
 
     with st.expander("Criar novo usuário", expanded=False):
         with st.form("create_user"):
@@ -1336,6 +1383,9 @@ def main():
         render_login(db)
         st.stop()
 
+    # Identidade visual global da área autenticada.
+    inject_dashboard_theme()
+
     if user.get("must_change_password"):
         render_forced_password_change(db, user)
         st.stop()
@@ -1397,7 +1447,7 @@ def main():
             )
             if clicked:
                 st.session_state["nav"] = page
-                selected_page = page
+                st.rerun()
 
         st.markdown(
             '<div class="sidebar-session-divider"><span>SESSÃO</span></div>',
