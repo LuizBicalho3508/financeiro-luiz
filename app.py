@@ -17,6 +17,7 @@ from dateutil.relativedelta import relativedelta
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 from charts import render_balance_chart, render_expense_donut, render_flow_chart
+from dashboard_ui import inject_dashboard_theme, render_dashboard_hero, section_title
 
 
 APP_NAME = "Meu Financeiro"
@@ -447,7 +448,7 @@ def render_login(db):
     with st.form("login_form", clear_on_submit=False):
         email = st.text_input("E-mail", placeholder="voce@email.com")
         password = st.text_input("Senha", type="password")
-        submitted = st.form_submit_button("Entrar", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Entrar", type="primary", width="stretch")
 
     if submitted:
         user = login_user(db, email, password)
@@ -664,11 +665,12 @@ def insert_income_recurrences(
 # Páginas
 # -----------------------------------------------------------------------------
 def page_dashboard(db, user):
-    st.title("Dashboard")
+    inject_dashboard_theme()
     rows = transaction_rows(db, user)
     df = to_dataframe(rows)
 
     today = date.today()
+    render_dashboard_hero(today)
     years = sorted(set(df["due_date"].dt.year.tolist())) if not df.empty else []
     if today.year not in years:
         years.append(today.year)
@@ -710,17 +712,17 @@ def page_dashboard(db, user):
     result_tone = "green" if result > 0 else "red" if result < 0 else "neutral"
     result_caption = "superávit previsto" if result > 0 else "déficit previsto" if result < 0 else "receitas e despesas equilibradas"
 
-    k1, k2, k3, k4, k5 = st.columns(5, gap="small")
-    render_kpi_card(k1, "Receitas", brl_from_cents(income), "green", "↑", "total previsto para o mês")
-    render_kpi_card(k2, "Despesas", brl_from_cents(expense), "red", "↓", "compromissos do mês")
-    render_kpi_card(k3, "Resultado", brl_from_cents(result), result_tone, "=", result_caption)
-    render_kpi_card(k4, "A pagar", brl_from_cents(pending_expense), "red", "!", "pendente de pagamento")
-    render_kpi_card(k5, "A receber", brl_from_cents(pending_income), "green", "+", "pendente de recebimento")
+    k1, k2, k3, k4, k5 = st.columns([1.28, 1, 1, 1, 1], gap="small")
+    render_kpi_card(k1, "Resultado previsto", brl_from_cents(result), result_tone, "◎", result_caption)
+    render_kpi_card(k2, "Receitas", brl_from_cents(income), "green", "↑", "total previsto no mês")
+    render_kpi_card(k3, "Despesas", brl_from_cents(expense), "red", "↓", "total comprometido")
+    render_kpi_card(k4, "A pagar", brl_from_cents(pending_expense), "red", "!", "pendências de saída")
+    render_kpi_card(k5, "A receber", brl_from_cents(pending_income), "green", "+", "pendências de entrada")
 
-    chart_left, chart_right = st.columns([1.55, 1])
+    chart_left, chart_right = st.columns([1.65, 1], gap="medium")
 
     with chart_left:
-        st.subheader("Fluxo mensal")
+        section_title("Fluxo financeiro — 12 meses", "RECEITAS · DESPESAS · SALDO")
         end_period = pd.Period(f"{selected_year}-{selected_month:02d}", freq="M")
         periods = pd.period_range(end=end_period, periods=12, freq="M")
         base = pd.DataFrame({"period": periods.astype(str)})
@@ -742,7 +744,7 @@ def page_dashboard(db, user):
         render_flow_chart(monthly, height=390)
 
     with chart_right:
-        st.subheader("Despesas por categoria")
+        section_title("Despesas por categoria", "COMPOSIÇÃO DO MÊS")
         exp_cat = current[(current["kind"] == "expense") & (current["status"] != "canceled")]
         if exp_cat.empty:
             st.info("Sem despesas no período selecionado.")
@@ -750,10 +752,10 @@ def page_dashboard(db, user):
             cat = exp_cat.groupby("category", as_index=False)["amount"].sum().sort_values("amount", ascending=False)
             render_expense_donut(cat, total=float(cat["amount"].sum()), height=390)
 
-    bottom_left, bottom_right = st.columns([1.2, 1])
+    bottom_left, bottom_right = st.columns([1.35, 1], gap="medium")
 
     with bottom_left:
-        st.subheader("Saldo acumulado do mês")
+        section_title("Saldo acumulado", "EVOLUÇÃO DIÁRIA")
         if current.empty:
             st.info("Sem dados para o período.")
         else:
@@ -767,7 +769,7 @@ def page_dashboard(db, user):
             render_balance_chart(daily, height=340)
 
     with bottom_right:
-        st.subheader("Próximos vencimentos")
+        section_title("Próximos vencimentos", "JANELA DE 30 DIAS")
         start_dt = pd.Timestamp(today)
         end_dt = pd.Timestamp(today + timedelta(days=30))
         upcoming = active_df[
@@ -782,11 +784,11 @@ def page_dashboard(db, user):
             view["Data"] = view["due_date"].dt.strftime("%d/%m/%Y")
             view["Tipo"] = view["kind"].map({"expense": "Despesa", "income": "Receita"})
             view["Valor"] = view["amount"].map(brl)
-            st.dataframe(view[["Data", "Tipo", "description", "Valor"]], hide_index=True, use_container_width=True)
+            st.dataframe(view[["Data", "Tipo", "description", "Valor"]], hide_index=True, width="stretch")
 
     budgets = list(db.budgets.find({"owner_user_id": user["id"], "month": f"{selected_year}-{selected_month:02d}"}))
     if budgets:
-        st.subheader("Orçamento do mês")
+        section_title("Orçamento do mês", "LIMITE POR CATEGORIA")
         budget_rows = []
         for item in budgets:
             spent = int(
@@ -844,7 +846,7 @@ def page_add_expense(db, user):
             total = money_to_cents(value) * int(installments)
             st.caption(f"Prévia: {int(installments)} × {brl(value)} = {brl_from_cents(total)}")
 
-        submitted = st.form_submit_button("Salvar despesa", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Salvar despesa", type="primary", width="stretch")
 
     if submitted:
         if not description.strip():
@@ -897,7 +899,7 @@ def page_add_income(db, user):
         notes = st.text_area("Observações", placeholder="Opcional")
         total = money_to_cents(value) * int(repetitions)
         st.caption(f"Prévia: {int(repetitions)} recebimento(s) × {brl(value)} = {brl_from_cents(total)}")
-        submitted = st.form_submit_button("Salvar receita", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Salvar receita", type="primary", width="stretch")
 
     if submitted:
         if not description.strip():
@@ -960,7 +962,7 @@ def page_transactions(db, user):
             columns={"description": "Descrição", "category": "Categoria", "account": "Conta"}
         ),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         height=430,
     )
 
@@ -999,21 +1001,21 @@ def page_transactions(db, user):
     a1, a2, a3 = st.columns(3)
     if selected["status"] == "pending":
         final_status = "paid" if selected["kind"] == "expense" else "received"
-        if a1.button("Dar baixa", type="primary", use_container_width=True):
+        if a1.button("Dar baixa", type="primary", width="stretch"):
             db.transactions.update_one(
                 {"_id": selected["_id"]},
                 {"$set": {"status": final_status, "paid_at": now_utc_naive(), "updated_at": now_utc_naive()}},
             )
             st.rerun()
     else:
-        if a1.button("Voltar para pendente", use_container_width=True):
+        if a1.button("Voltar para pendente", width="stretch"):
             db.transactions.update_one(
                 {"_id": selected["_id"]},
                 {"$set": {"status": "pending", "paid_at": None, "updated_at": now_utc_naive()}},
             )
             st.rerun()
 
-    if a2.button("Cancelar lançamento", use_container_width=True):
+    if a2.button("Cancelar lançamento", width="stretch"):
         db.transactions.update_one(
             {"_id": selected["_id"]},
             {"$set": {"status": "canceled", "updated_at": now_utc_naive()}},
@@ -1218,7 +1220,7 @@ def page_admin_users(db, user):
             for u in users
         ]
     )
-    st.dataframe(table, hide_index=True, use_container_width=True)
+    st.dataframe(table, hide_index=True, width="stretch")
 
     options = {str(u["_id"]): f"{u.get('name', '')} — {u.get('email', '')}" for u in users}
     selected_id = st.selectbox("Gerenciar usuário", list(options.keys()), format_func=lambda x: options[x])
@@ -1227,7 +1229,7 @@ def page_admin_users(db, user):
     c1, c2 = st.columns(2)
     if selected_id != user["id"]:
         action_label = "Desativar usuário" if selected.get("active", True) else "Reativar usuário"
-        if c1.button(action_label, use_container_width=True):
+        if c1.button(action_label, width="stretch"):
             db.users.update_one(
                 {"_id": selected["_id"]},
                 {"$set": {"active": not selected.get("active", True), "updated_at": now_utc_naive()}},
@@ -1238,7 +1240,7 @@ def page_admin_users(db, user):
 
     with c2.form("reset_password"):
         reset_password = st.text_input("Nova senha temporária", type="password")
-        reset = st.form_submit_button("Redefinir senha", use_container_width=True)
+        reset = st.form_submit_button("Redefinir senha", width="stretch")
     if reset:
         if len(reset_password) < 8:
             st.error("A senha temporária precisa ter pelo menos 8 caracteres.")
@@ -1299,7 +1301,7 @@ def main():
             pages.append("Usuários")
         selected_page = st.radio("Navegação", pages, key="nav")
         st.divider()
-        if st.button("Sair", use_container_width=True):
+        if st.button("Sair", width="stretch"):
             do_logout()
 
     if selected_page == "Dashboard":
