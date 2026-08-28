@@ -798,7 +798,39 @@ def page_dashboard(db, user):
             view["Data"] = view["due_date"].dt.strftime("%d/%m/%Y")
             view["Tipo"] = view["kind"].map({"expense": "Despesa", "income": "Receita"})
             view["Valor"] = view["amount"].map(brl)
-            st.dataframe(view[["Data", "Tipo", "description", "Valor"]], hide_index=True, width="stretch")
+            upcoming_view = view[["Data", "Tipo", "description", "Valor"]].rename(
+                columns={"description": "Descrição"}
+            )
+
+            def style_upcoming_type(value):
+                if value == "Despesa":
+                    return (
+                        "background-color: #35141d; "
+                        "color: #ff7083; "
+                        "font-weight: 800; "
+                        "border-left: 3px solid #ff4d67;"
+                    )
+                if value == "Receita":
+                    return (
+                        "background-color: #0d3021; "
+                        "color: #52f59c; "
+                        "font-weight: 800; "
+                        "border-left: 3px solid #16e07a;"
+                    )
+                return ""
+
+            styled_upcoming = upcoming_view.style.map(style_upcoming_type, subset=["Tipo"])
+            st.dataframe(
+                styled_upcoming,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Data": st.column_config.TextColumn("Data", width="small"),
+                    "Tipo": st.column_config.TextColumn("Tipo", width="small"),
+                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                    "Valor": st.column_config.TextColumn("Valor", width="medium"),
+                },
+            )
 
     budgets = list(db.budgets.find({"owner_user_id": user["id"], "month": f"{selected_year}-{selected_month:02d}"}))
     if budgets:
