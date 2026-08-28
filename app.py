@@ -642,9 +642,10 @@ def page_dashboard(db, user):
             daily["signed"] = daily.apply(
                 lambda r: r["amount"] if r["kind"] == "income" else -r["amount"], axis=1
             )
-            daily = daily.groupby(daily["due_date"].dt.date, as_index=False)["signed"].sum()
+            daily["date"] = daily["due_date"].dt.normalize()
+            daily = daily.groupby("date", as_index=False, sort=True)["signed"].sum()
             daily["acumulado"] = daily["signed"].cumsum()
-            fig = px.area(daily, x="due_date", y="acumulado", markers=True)
+            fig = px.area(daily, x="date", y="acumulado", markers=True)
             fig.update_layout(height=330, margin=dict(l=10, r=10, t=20, b=10), xaxis_title="", yaxis_title="R$")
             st.plotly_chart(fig, use_container_width=True)
 
