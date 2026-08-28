@@ -16,6 +16,7 @@ from bson import ObjectId
 from dateutil.relativedelta import relativedelta
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
+from charts import render_balance_chart, render_expense_donut, render_flow_chart
 
 
 APP_NAME = "Meu Financeiro"
@@ -738,27 +739,7 @@ def page_dashboard(db, user):
             monthly["expense"] = 0.0
         monthly["balance"] = monthly["income"] - monthly["expense"]
 
-        fig = go.Figure()
-        fig.add_bar(x=monthly["period"], y=monthly["income"], name="Receitas", marker_color="#22c55e")
-        fig.add_bar(x=monthly["period"], y=monthly["expense"], name="Despesas", marker_color="#ef4444")
-        fig.add_scatter(
-            x=monthly["period"],
-            y=monthly["balance"],
-            name="Saldo",
-            mode="lines+markers",
-            line=dict(color="#38bdf8", width=3),
-            marker=dict(size=7),
-        )
-        fig.update_layout(
-            barmode="group",
-            height=380,
-            margin=dict(l=10, r=10, t=20, b=10),
-            legend_orientation="h",
-            legend_y=1.1,
-            yaxis_title="R$",
-            xaxis_title="",
-        )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        render_flow_chart(monthly, height=390)
 
     with chart_right:
         st.subheader("Despesas por categoria")
@@ -767,16 +748,7 @@ def page_dashboard(db, user):
             st.info("Sem despesas no período selecionado.")
         else:
             cat = exp_cat.groupby("category", as_index=False)["amount"].sum().sort_values("amount", ascending=False)
-            fig = px.pie(
-                cat,
-                names="category",
-                values="amount",
-                hole=0.58,
-                color_discrete_sequence=px.colors.sequential.Reds_r,
-            )
-            fig.update_traces(textposition="inside", textinfo="percent", marker=dict(line=dict(color="rgba(15,23,42,.35)", width=1)))
-            fig.update_layout(height=380, margin=dict(l=10, r=10, t=20, b=10), legend_orientation="h")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            render_expense_donut(cat, total=float(cat["amount"].sum()), height=390)
 
     bottom_left, bottom_right = st.columns([1.2, 1])
 
@@ -792,24 +764,7 @@ def page_dashboard(db, user):
             daily["date"] = daily["due_date"].dt.normalize()
             daily = daily.groupby("date", as_index=False, sort=True)["signed"].sum()
             daily["acumulado"] = daily["signed"].cumsum()
-            final_balance = float(daily["acumulado"].iloc[-1])
-            balance_color = "#22c55e" if final_balance >= 0 else "#ef4444"
-            fill_color = "rgba(34,197,94,.16)" if final_balance >= 0 else "rgba(239,68,68,.16)"
-            fig = go.Figure(
-                go.Scatter(
-                    x=daily["date"],
-                    y=daily["acumulado"],
-                    mode="lines+markers",
-                    line=dict(color=balance_color, width=3),
-                    marker=dict(size=7, color=balance_color),
-                    fill="tozeroy",
-                    fillcolor=fill_color,
-                    hovertemplate="%{x|%d/%m/%Y}<br>Saldo: R$ %{y:,.2f}<extra></extra>",
-                )
-            )
-            fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="rgba(148,163,184,.55)")
-            fig.update_layout(height=330, margin=dict(l=10, r=10, t=20, b=10), xaxis_title="", yaxis_title="R$", showlegend=False)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            render_balance_chart(daily, height=340)
 
     with bottom_right:
         st.subheader("Próximos vencimentos")

@@ -201,10 +201,6 @@ var data = {data};
 var root = am5.Root.new("chartdiv");
 root.setThemes([am5themes_Animated.new(root)]);
 root.numberFormatter.set("numberFormat", "#,###.00");
-root.set("colors", am5.ColorSet.new(root, {{
-  colors: [am5.color(0xEF4444), am5.color(0xF97316), am5.color(0xF59E0B), am5.color(0xE11D48), am5.color(0xFB7185), am5.color(0x38BDF8), am5.color(0x8B5CF6)]
-}}));
-
 var chart = root.container.children.push(am5percent.PieChart.new(root, {{
   innerRadius: am5.percent(64), layout: root.horizontalLayout,
   paddingTop: 12, paddingBottom: 10, paddingLeft: 4, paddingRight: 4
@@ -214,6 +210,10 @@ var series = chart.series.push(am5percent.PieSeries.new(root, {{
   valueField: "value", categoryField: "category", alignLabels: false,
   tooltip: am5.Tooltip.new(root, {{ labelText: "[bold]{{category}}[/]\nR$ {{value.formatNumber('#,###.00')}}\n{{valuePercentTotal.formatNumber('0.0')}}% do total" }})
 }}));
+series.get("colors").set("colors", [
+  am5.color(0xEF4444), am5.color(0xF97316), am5.color(0xF59E0B),
+  am5.color(0xE11D48), am5.color(0xFB7185), am5.color(0x38BDF8), am5.color(0x8B5CF6)
+]);
 series.labels.template.set("forceHidden", true);
 series.ticks.template.set("forceHidden", true);
 series.slices.template.setAll({{
