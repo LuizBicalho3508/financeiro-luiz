@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -15,26 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Aplicar cores nos proximos vencimentos
-        if: github.event_name == 'push'
-        run: python tools/patch_upcoming_type_colors.py
-
-      - name: Publicar ajuste visual se necessario
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          if git diff --quiet -- app.py; then
-            echo "Nenhuma alteracao necessaria."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add app.py
-            git commit -m "feat: colore tipos nos proximos vencimentos"
-            git push origin main
-          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
